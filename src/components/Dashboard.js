@@ -293,6 +293,23 @@ function Sidebar({ user, onLogout, chats, setNotification, openSettings, isOpen,
         };
     }, [openMenuId]);
 
+    // NEW: Handle clicks outside sidebar to close it
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (isOpen && !event.target.closest('.sidebar-container') && !event.target.closest('.sidebar-toggle-btn')) {
+                setIsOpen(false);
+            }
+        };
+        
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isOpen, setIsOpen]);
+
     const themeClasses = {
         dark: {
             bg: 'bg-gray-900/90 backdrop-blur-xl',
@@ -318,7 +335,7 @@ function Sidebar({ user, onLogout, chats, setNotification, openSettings, isOpen,
     const currentTheme = themeClasses[theme];
 
     return (
-        <div className={`fixed inset-y-0 left-0 z-30 flex flex-col w-80 ${currentTheme.bg} p-4 ${currentTheme.text} transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out md:relative md:translate-x-0 border-r ${currentTheme.border}`}>
+        <div className={`sidebar-container fixed inset-y-0 left-0 z-30 flex flex-col w-80 ${currentTheme.bg} p-4 ${currentTheme.text} transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out md:relative md:translate-x-0 border-r ${currentTheme.border}`}>
             <button onClick={() => setIsOpen(false)} className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white md:hidden transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
@@ -873,10 +890,15 @@ function ChatDashboard({ onLogout, user }) {
 
             <div className="flex-1 flex flex-col">
                 <div className="p-6 flex justify-between items-center h-20 backdrop-blur-xl bg-white/5 border-b border-gray-700/20">
-                    <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`p-3 rounded-xl ${theme === 'dark' ? 'text-gray-400 hover:text-white hover:bg-gray-800/50' : 'text-gray-600 hover:text-black hover:bg-gray-200/50'} transition-all transform hover:scale-110`} title="Toggle Sidebar">
+                    <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`sidebar-toggle-btn p-3 rounded-xl ${theme === 'dark' ? 'text-gray-400 hover:text-white hover:bg-gray-800/50' : 'text-gray-600 hover:text-black hover:bg-gray-200/50'} transition-all transform hover:scale-110`} title="Toggle Sidebar">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                     </button>
-                    <ViloraLogo className="h-12 w-auto opacity-80 hover:opacity-100 transition-opacity" />
+                    <h1 
+                        className="text-2xl font-light tracking-[0.3em] bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent"
+                        style={{ fontFamily: "'Playfair Display', serif" }}
+                    >
+                        VILORA
+                    </h1>
                     <button onClick={() => startNewChat()} className={`p-3 rounded-xl ${theme === 'dark' ? 'text-gray-400 hover:text-white hover:bg-gray-800/50' : 'text-gray-600 hover:text-black hover:bg-gray-200/50'} transition-all transform hover:scale-110`} title="New Chat">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
                     </button>
@@ -1036,6 +1058,7 @@ function ChatDashboard({ onLogout, user }) {
                 }
                 
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@300;400;500;600;700;800;900&display=swap');
                 
                 * {
                     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

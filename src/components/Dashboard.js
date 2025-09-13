@@ -1,22 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { auth, db, storage } from '../firebase-config'; // Assuming firebase-config exports storage
+import { auth, db, storage } from '../firebase-config';
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { updateProfile } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { collection, addDoc, getDocs, query, where, orderBy, doc, updateDoc, serverTimestamp, onSnapshot, deleteDoc, writeBatch } from "firebase/firestore";
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import LogoImage from '../logo.png'; // Assuming logo path is correct
+import { atomDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import Chart from 'chart.js/auto'; // Import Chart.js
+import LogoImage from '../logo.png';
 
-// --- Helper Components ---
-
+// ViloraLogo Component (Unchanged)
 const ViloraLogo = ({ className }) => (
     <div className={className}>
         <img src={LogoImage} alt="Vilora" className="w-16 h-16 drop-shadow-lg" />
     </div>
 );
 
+// NicknameSetup Component (Unchanged)
 function NicknameSetup({ onComplete, setNotification }) {
     const [nickname, setNickname] = useState('');
     const handleSubmit = async (e) => {
@@ -60,6 +61,7 @@ function NicknameSetup({ onComplete, setNotification }) {
     );
 }
 
+// ChatInput Component (Unchanged)
 function ChatInput({ onSendMessage, disabled, setNotification, theme }) {
     const [inputText, setInputText] = useState('');
     const [attachedFile, setAttachedFile] = useState(null);
@@ -196,10 +198,12 @@ function ChatInput({ onSendMessage, disabled, setNotification, theme }) {
     );
 }
 
+// Icons (Unchanged)
 const SettingsIcon = () => (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.096 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>);
 const ArchiveIcon = () => (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>);
 const LogoutIcon = () => (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>);
 
+// Sidebar Component (Unchanged)
 function Sidebar({ user, onLogout, chats, setNotification, openSettings, isOpen, setIsOpen, theme, activeChatId, setActiveChatId, onDeleteChat, onArchiveChat }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [openMenuId, setOpenMenuId] = useState(null);
@@ -207,11 +211,9 @@ function Sidebar({ user, onLogout, chats, setNotification, openSettings, isOpen,
     const [showArchived, setShowArchived] = useState(false);
     const menuRef = useRef(null);
     const renameInputRef = useRef(null);
-    // NEW: State and ref for search voice recognition
     const [isListening, setIsListening] = useState(false);
     const recognitionRef = useRef(null);
 
-    // NEW: Setup speech recognition for search
     useEffect(() => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
@@ -231,7 +233,6 @@ function Sidebar({ user, onLogout, chats, setNotification, openSettings, isOpen,
         };
     }, []);
 
-    // NEW: Handler for the search microphone button
     const handleMicClick = () => {
         if (!recognitionRef.current) {
             setNotification("Speech recognition is not supported in your browser.");
@@ -255,9 +256,16 @@ function Sidebar({ user, onLogout, chats, setNotification, openSettings, isOpen,
         setOpenMenuId(null);
     };
 
-    const handleRename = (chatId, newTitle) => {
+    const handleRename = async (chatId, newTitle) => {
         if (newTitle && newTitle.trim() !== '') {
-            // Firestore rename logic would go here
+            try {
+                const chatRef = doc(db, "chats", chatId);
+                await updateDoc(chatRef, { title: newTitle.trim() });
+                setNotification("Chat renamed successfully!");
+            } catch (error) {
+                console.error("Error renaming chat:", error);
+                setNotification("Failed to rename chat.");
+            }
         }
         setRenamingId(null);
     };
@@ -293,18 +301,15 @@ function Sidebar({ user, onLogout, chats, setNotification, openSettings, isOpen,
         };
     }, [openMenuId]);
 
-    // NEW: Handle clicks outside sidebar to close it
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (isOpen && !event.target.closest('.sidebar-container') && !event.target.closest('.sidebar-toggle-btn')) {
                 setIsOpen(false);
             }
         };
-        
         if (isOpen) {
             document.addEventListener('mousedown', handleClickOutside);
         }
-        
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
@@ -339,7 +344,6 @@ function Sidebar({ user, onLogout, chats, setNotification, openSettings, isOpen,
             <button onClick={() => setIsOpen(false)} className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white md:hidden transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
-
             <div className="flex items-center gap-4 p-3 rounded-2xl bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-cyan-500/20 mb-6">
                 {user.photoURL ? (
                     <img src={user.photoURL} alt="Profile" className="w-12 h-12 rounded-full border-2 border-cyan-400/50 shadow-lg" />
@@ -353,7 +357,6 @@ function Sidebar({ user, onLogout, chats, setNotification, openSettings, isOpen,
                     <p className="text-sm text-gray-400 font-medium">AI Explorer</p>
                 </div>
             </div>
-
             <div className="relative mb-6">
                 <input
                     type="text"
@@ -377,7 +380,6 @@ function Sidebar({ user, onLogout, chats, setNotification, openSettings, isOpen,
                     </button>
                 </div>
             </div>
-
             <div className="space-y-2 mb-6">
                 <button onClick={openSettings} className={`w-full flex items-center gap-4 p-3 rounded-xl ${currentTheme.secondaryText} ${currentTheme.hoverBg} font-medium transition-all transform hover:scale-105`}>
                     <SettingsIcon />
@@ -392,9 +394,7 @@ function Sidebar({ user, onLogout, chats, setNotification, openSettings, isOpen,
                     <span className="font-semibold">Sign Out</span>
                 </button>
             </div>
-
             <hr className={`${currentTheme.border} mb-4`} />
-
             <div className="flex-1 overflow-y-auto pr-2">
                 <h3 className="px-3 text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 mb-3 tracking-wider uppercase">Your Chats</h3>
                 <div className="space-y-2">
@@ -441,6 +441,7 @@ function Sidebar({ user, onLogout, chats, setNotification, openSettings, isOpen,
     );
 }
 
+// SettingsModal Component (Unchanged)
 function SettingsModal({ user, closeSettings, setNotification, theme, setTheme, textSize, setTextSize, saveHistory, setSaveHistory }) {
     const [newNickname, setNewNickname] = useState(user.displayName);
     const [newProfilePic, setNewProfilePic] = useState(null);
@@ -560,7 +561,192 @@ function SettingsModal({ user, closeSettings, setNotification, theme, setTheme, 
     );
 }
 
-// --- Main Dashboard Layout ---
+// NEW: Canvas Modal Component
+function CanvasModal({ isOpen, onClose, onSave, theme, chartData, user }) {
+    const canvasRef = useRef(null);
+    const [isDrawing, setIsDrawing] = useState(false);
+    const [ctx, setCtx] = useState(null);
+    const chartInstanceRef = useRef(null);
+
+    useEffect(() => {
+        if (isOpen && canvasRef.current) {
+            const canvas = canvasRef.current;
+            canvas.width = 800;
+            canvas.height = 600;
+
+            if (chartData) {
+                // Render chart if chartData is provided
+                if (chartInstanceRef.current) {
+                    chartInstanceRef.current.destroy();
+                }
+                chartInstanceRef.current = new Chart(canvas, {
+                    type: chartData.type || 'bar',
+                    data: chartData.data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true }
+                        },
+                        plugins: {
+                            legend: { display: true }
+                        }
+                    }
+                });
+            } else {
+                // Setup for freehand drawing
+                const context = canvas.getContext('2d');
+                context.lineWidth = 2;
+                context.lineCap = 'round';
+                context.strokeStyle = theme === 'dark' ? '#ffffff' : '#000000';
+                setCtx(context);
+            }
+        }
+        return () => {
+            if (chartInstanceRef.current) {
+                chartInstanceRef.current.destroy();
+                chartInstanceRef.current = null;
+            }
+        };
+    }, [isOpen, theme, chartData]);
+
+    const startDrawing = (e) => {
+        if (!ctx || chartData) return; // Disable drawing if chart is displayed
+        setIsDrawing(true);
+        const rect = canvasRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+    };
+
+    const draw = (e) => {
+        if (!isDrawing || !ctx || chartData) return;
+        const rect = canvasRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+    };
+
+    const stopDrawing = () => {
+        setIsDrawing(false);
+    };
+
+    const clearCanvas = () => {
+        if (ctx && !chartData) {
+            ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        }
+    };
+
+    const handleSave = () => {
+        const canvas = canvasRef.current;
+        canvas.toBlob(async (blob) => {
+            if (!blob) {
+                console.error("Canvas blob is null.");
+                onClose();
+                return;
+            }
+            try {
+                const storageRef = ref(storage, `canvas-drawings/${user.uid}/${Date.now()}.png`);
+                await uploadBytes(storageRef, blob);
+                const downloadURL = await getDownloadURL(storageRef);
+                onSave(downloadURL);
+            } catch (error) {
+                console.error("Error saving canvas:", error);
+            } finally {
+                onClose();
+            }
+        });
+    };
+
+    if (!isOpen) return null;
+
+    const themeClasses = theme === 'dark' ? 'bg-gray-900/95 backdrop-blur-xl text-white border-gray-700/50' : 'bg-white/95 backdrop-blur-xl text-gray-900 border-gray-200/50';
+
+    return (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+            <div className={`${themeClasses} rounded-3xl shadow-2xl w-full max-w-4xl h-3/4 flex flex-col border`}>
+                <div className="flex justify-between items-center p-6 border-b">
+                    <h2 className="text-2xl font-bold">🎨 {chartData ? 'Chart Visualization' : 'Drawing Canvas'}</h2>
+                    <div className="flex gap-2">
+                        {!chartData && (
+                            <button onClick={clearCanvas} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Clear</button>
+                        )}
+                        <button onClick={handleSave} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Save & Close</button>
+                        <button onClick={onClose} className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">&times;</button>
+                    </div>
+                </div>
+                <div className="flex-1 flex justify-center items-center p-4">
+                    <canvas
+                        ref={canvasRef}
+                        onMouseDown={startDrawing}
+                        onMouseMove={draw}
+                        onMouseUp={stopDrawing}
+                        onMouseLeave={stopDrawing}
+                        className={`border-2 ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'} rounded-lg cursor-crosshair bg-white`}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// NEW: Website Preview Modal (Updated)
+function PreviewModal({ isOpen, onClose, code, theme }) {
+    const iframeRef = useRef(null);
+
+    useEffect(() => {
+        if (isOpen && code && iframeRef.current) {
+            const iframe = iframeRef.current;
+            // Using srcDoc is a more secure and reliable way to render the HTML
+            iframe.srcdoc = code;
+        }
+    }, [isOpen, code]);
+
+    if (!isOpen) return null;
+
+    const themeClasses = theme === 'dark' 
+        ? 'bg-gray-900/95 backdrop-blur-xl text-white border-gray-700/50' 
+        : 'bg-white/95 backdrop-blur-xl text-gray-900 border-gray-200/50';
+
+    return (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+            <div className={`${themeClasses} rounded-3xl shadow-2xl w-full max-w-6xl h-5/6 flex flex-col border`}>
+                <div className="flex justify-between items-center p-4 border-b">
+                    <h2 className="text-xl font-bold">Live Preview</h2>
+                    <button onClick={onClose} className="text-2xl hover:text-red-500 transition-colors">&times;</button>
+                </div>
+                {/* Use overflow-hidden to respect the rounded corners */}
+                <div className="flex-1 flex overflow-hidden">
+                    {/* Make the code pane scrollable */}
+                    <div className="w-1/2 border-r custom-scrollbar overflow-auto">
+                        <SyntaxHighlighter 
+                            language="html" 
+                            style={atomDark} 
+                            customStyle={{ height: '100%', margin: 0, padding: '16px' }}
+                            wrapLongLines={true}
+                        >
+                            {code}
+                        </SyntaxHighlighter>
+                    </div>
+                    {/* The Key Change: Add bg-white to this container */}
+                    <div className="w-1/2 bg-white">
+                        <iframe 
+                            ref={iframeRef} 
+                            title="Live Preview" 
+                            className="w-full h-full border-0" 
+                            sandbox="allow-scripts allow-same-origin" 
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
+// Main Dashboard Layout
 function ChatDashboard({ onLogout, user }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -575,6 +761,10 @@ function ChatDashboard({ onLogout, user }) {
     const [saveHistory, setSaveHistory] = useState(true);
     const [userLocation, setUserLocation] = useState(null);
     const [briefing, setBriefing] = useState('');
+    const [isCanvasOpen, setIsCanvasOpen] = useState(false);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [previewCode, setPreviewCode] = useState('');
+    const [chartData, setChartData] = useState(null);
     const personas = ["🤖 Companion", "😄 Comedian", "💝 Loyal Friend", "📚 Homework Helper", "👨‍⚕️ Doc", "🧠 Therapist"];
     const chatEndRef = useRef(null);
     const isInitialLoad = useRef(true);
@@ -586,7 +776,6 @@ function ChatDashboard({ onLogout, user }) {
             createdAt: serverTimestamp(),
             archived: false,
         };
-
         try {
             const docRef = await addDoc(collection(db, "chats"), newChatData);
             setActiveChatId(docRef.id);
@@ -600,7 +789,6 @@ function ChatDashboard({ onLogout, user }) {
 
     const handleDeleteChat = async (chatIdToDelete) => {
         if (!chatIdToDelete) return;
-
         try {
             const messagesQuery = query(collection(db, "chats", chatIdToDelete, "messages"));
             const messagesSnapshot = await getDocs(messagesQuery);
@@ -609,13 +797,10 @@ function ChatDashboard({ onLogout, user }) {
                 batch.delete(doc.ref);
             });
             await batch.commit();
-
             await deleteDoc(doc(db, "chats", chatIdToDelete));
-
             if (activeChatId === chatIdToDelete) {
                 setActiveChatId(null);
             }
-
             setNotification("🗑️ Chat deleted successfully.");
         } catch (error) {
             console.error("Error deleting chat:", error);
@@ -627,9 +812,7 @@ function ChatDashboard({ onLogout, user }) {
         if (!chatId) return;
         try {
             const chatRef = doc(db, "chats", chatId);
-            await updateDoc(chatRef, {
-                archived: !currentArchivedStatus
-            });
+            await updateDoc(chatRef, { archived: !currentArchivedStatus });
             setNotification(`${!currentArchivedStatus ? '📦 Chat archived' : '📤 Chat restored'} successfully.`);
             if (activeChatId === chatId) {
                 setActiveChatId(null);
@@ -645,18 +828,47 @@ function ChatDashboard({ onLogout, user }) {
         const newBotMessage = { text, sender: 'bot', createdAt: serverTimestamp() };
         await addDoc(collection(db, "chats", chatId, "messages"), newBotMessage);
     };
+
+    const handleCanvasSave = async (imageUrl) => {
+        let currentChatId = activeChatId;
+        if (!currentChatId) {
+            currentChatId = await startNewChat();
+        }
+        if(currentChatId) {
+            const messageText = `Here is your creation:\n![Drawing from Vilora Canvas](${imageUrl})`;
+            await addDoc(collection(db, "chats", currentChatId, "messages"), {
+                text: messageText,
+                sender: 'bot', // Or 'user' depending on who initiated the save
+                createdAt: serverTimestamp(),
+                imageUrl: imageUrl
+            });
+            setNotification("🎨 Drawing saved and added to chat!");
+        }
+    };
     
-    // --- IMPROVED: Error Handling in useEffect ---
+    const handleOpenPreview = (code) => {
+        setPreviewCode(code);
+        setIsPreviewOpen(true);
+    };
+
+    const handleSpeak = (textToSpeak) => {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            window.speechSynthesis.speak(utterance);
+        } else {
+            setNotification("Sorry, your browser doesn't support text-to-speech.");
+        }
+    };
+
     useEffect(() => {
         if (isInitialLoad.current && user) {
             isInitialLoad.current = false;
-
             const getBriefing = async () => {
                 setNotification("🌅 Getting your daily briefing...");
                 const functions = getFunctions();
                 const getWeather = httpsCallable(functions, 'getWeather');
                 const getNews = httpsCallable(functions, 'getNews');
-
                 try {
                     const position = await new Promise((resolve, reject) =>
                         navigator.geolocation.getCurrentPosition(resolve, reject)
@@ -666,10 +878,8 @@ function ChatDashboard({ onLogout, user }) {
                         longitude: position.coords.longitude,
                     };
                     setUserLocation(location);
-
                     let weatherText = "";
                     let newsText = "";
-
                     try {
                         const weatherResult = await getWeather(location);
                         const weather = weatherResult.data.weather;
@@ -678,12 +888,10 @@ function ChatDashboard({ onLogout, user }) {
                         console.error("Weather fetch failed:", weatherError);
                         weatherText = "🌦️ Weather data unavailable.";
                     }
-
                     try {
                         const geoResponse = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${location.latitude}&longitude=${location.longitude}&localityLanguage=en`);
                         const geoData = await geoResponse.json();
                         const countryCode = geoData.countryCode.toLowerCase();
-
                         const newsResult = await getNews({ country: countryCode });
                         const articles = newsResult.data.articles;
                         if (articles && articles.length > 0) {
@@ -693,7 +901,6 @@ function ChatDashboard({ onLogout, user }) {
                         console.error("News fetch failed:", newsError);
                         newsText = "📰 News data unavailable.";
                     }
-
                     setBriefing(`Good morning, ${user.displayName}! ✨ ${weatherText} ${newsText}`);
                 } catch (locationError) {
                     setNotification("📍 Location access denied.");
@@ -720,14 +927,11 @@ function ChatDashboard({ onLogout, user }) {
     }, [user]);
 
     useEffect(() => {
-        // Stop any speaking when the active chat changes
         window.speechSynthesis.cancel();
-        
         if (!activeChatId) return;
         const messagesQuery = query(collection(db, "chats", activeChatId, "messages"), orderBy("createdAt", "asc"));
         const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
             const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
             setChats(currentChats =>
                 currentChats.map(chat =>
                     chat.id === activeChatId ? { ...chat, messages } : chat
@@ -736,7 +940,6 @@ function ChatDashboard({ onLogout, user }) {
         });
         return () => unsubscribe();
     }, [activeChatId]);
-
 
     useEffect(() => {
         if (activeChatId) {
@@ -751,12 +954,10 @@ function ChatDashboard({ onLogout, user }) {
         }
     }, [notification]);
 
-    // --- IMPROVED: handleSendMessage with Better Error Handling ---
     const handleSendMessage = async (text, file) => {
         if (!text.trim() && !file) return;
 
         let currentChatId = activeChatId;
-
         if (!currentChatId) {
             const newChatId = await startNewChat();
             if (!newChatId) {
@@ -786,14 +987,12 @@ function ChatDashboard({ onLogout, user }) {
                 const weather = result.data.weather;
                 const weatherMarkdown = `🌡️ The current temperature is **${weather.temperature}°C** with wind speeds of **${weather.windspeed} km/h**.`;
                 await addBotMessageToChat(weatherMarkdown, currentChatId);
-
             } else if (lowerCaseText.includes("news")) {
                 const getNews = httpsCallable(functions, 'getNews');
                 const geoResponse = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${userLocation?.latitude || 34.0522}&longitude=${userLocation?.longitude || -118.2437}&localityLanguage=en`);
                 if (!geoResponse.ok) throw new Error("Geolocation API failed");
                 const geoData = await geoResponse.json();
                 const countryCode = geoData.countryCode.toLowerCase();
-
                 const result = await getNews({ country: countryCode || 'us' });
                 if (!result.data || !result.data.articles) throw new Error("Invalid news data");
                 const articles = result.data.articles;
@@ -802,7 +1001,44 @@ function ChatDashboard({ onLogout, user }) {
                     newsMarkdown += `${index + 1}. **[${article.title}](${article.url})**\n`;
                 });
                 await addBotMessageToChat(newsMarkdown, currentChatId);
-
+            } else if (lowerCaseText.includes("draw a chart") || lowerCaseText.includes("visualize data")) {
+                const sampleChartData = {
+                    type: 'line',
+                    data: {
+                        labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+                        datasets: [{
+                            label: 'My First dataset',
+                            backgroundColor: 'rgb(255, 99, 132)',
+                            borderColor: 'rgb(255, 99, 132)',
+                            data: [0, 10, 5, 2, 20, 30, 45],
+                        }]
+                    }
+                };
+                setChartData(sampleChartData);
+                setIsCanvasOpen(true);
+                await addBotMessageToChat("Opening canvas to visualize the requested chart...", currentChatId);
+            } else if (lowerCaseText.includes("create a website") || lowerCaseText.includes("webpage")) {
+                const sampleHtml = `<!DOCTYPE html>
+<html>
+<head>
+    <title>My Awesome Page</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; background: #f4f4f9; color: #333; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { text-align: center; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h1 { color: #8b5cf6; }
+        button { padding: 10px 20px; font-size: 16px; background: #06b6d4; color: white; border: none; cursor: pointer; border-radius: 8px; transition: background 0.3s; }
+        button:hover { background: #8b5cf6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to My Website</h1>
+        <p>This is a sample webpage created by Vilora AI.</p>
+        <button onclick="alert('Hello from Vilora!')">Click Me</button>
+    </div>
+</body>
+</html>`;
+                await addBotMessageToChat("Here is the HTML for a simple webpage. You can preview it by clicking the eye icon.\n```html\n" + sampleHtml + "\n```", currentChatId);
             } else {
                 const currentChat = chats.find(c => c.id === currentChatId);
                 const messagesForApi = [...(currentChat?.messages || []), newUserMessage];
@@ -810,13 +1046,11 @@ function ChatDashboard({ onLogout, user }) {
                     role: msg.sender === 'user' ? 'user' : 'model',
                     parts: [{ text: msg.text }]
                 }));
-
                 const chatToUpdate = chats.find(c => c.id === currentChatId);
                 if (chatToUpdate && chatToUpdate.title === "New Chat") {
                     const newTitle = text.substring(0, 40) + (text.length > 40 ? "..." : "");
                     await updateDoc(doc(db, "chats", currentChatId), { title: newTitle });
                 }
-
                 const getGeminiResponse = httpsCallable(functions, 'getGeminiResponse');
                 const result = await getGeminiResponse({ chatHistory, selectedPersona, userId: user.uid });
                 if (!result.data || !result.data.text) throw new Error("Invalid Gemini response");
@@ -828,17 +1062,6 @@ function ChatDashboard({ onLogout, user }) {
             await addBotMessageToChat("😅 Sorry, I ran into a problem trying to respond. Let's try that again!", currentChatId);
         } finally {
             setIsLoading(false);
-        }
-    };
-    
-    // NEW: Function to handle text-to-speech
-    const handleSpeak = (textToSpeak) => {
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel(); // Stop any previous speech
-            const utterance = new SpeechSynthesisUtterance(textToSpeak);
-            window.speechSynthesis.speak(utterance);
-        } else {
-            setNotification("Sorry, your browser doesn't support text-to-speech.");
         }
     };
 
@@ -853,57 +1076,106 @@ function ChatDashboard({ onLogout, user }) {
     const markdownComponents = {
         code({ node, inline, className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || '');
+            const codeString = String(children).replace(/\n$/, '');
+            const isHtml = match && match[1].toLowerCase() === 'html';
             return !inline && match ? (
-                <SyntaxHighlighter
-                    style={atomDark}
-                    language={match[1]}
-                    PreTag="div"
-                    className="rounded-xl overflow-hidden shadow-lg"
-                    {...props}
-                >
-                    {String(children).replace(/\n$/, '')}
-                </SyntaxHighlighter>
+                <div className="relative my-4">
+                    <SyntaxHighlighter
+                        style={atomDark}
+                        language={match[1]}
+                        PreTag="div"
+                        className="rounded-xl overflow-hidden shadow-lg"
+                        {...props}
+                    >
+                        {codeString}
+                    </SyntaxHighlighter>
+                    {isHtml && (
+                        <button
+                            onClick={() => handleOpenPreview(codeString)}
+                            className="absolute top-2 right-2 p-2 bg-cyan-500 text-white rounded-full hover:bg-cyan-600 transition-all transform hover:scale-110"
+                            title="Preview Website"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </button>
+                    )}
+                </div>
             ) : (
                 <code className={`${className} bg-gray-800/50 px-2 py-1 rounded text-cyan-400 font-mono`} {...props}>
                     {children}
                 </code>
             );
         },
+        img(props) {
+            return <img {...props} style={{maxWidth: '100%', borderRadius: '12px'}} alt="Content from chat" />
+        }
     };
 
     return (
         <div className={`h-screen w-full flex font-sans relative overflow-hidden ${theme === 'dark' ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white' : 'bg-gradient-to-br from-gray-50 via-white to-gray-100 text-gray-900'}`}>
             <Sidebar
-                user={user} onLogout={onLogout} chats={chats}
-                setNotification={setNotification} openSettings={() => setIsSettingsOpen(true)}
-                isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} theme={theme}
-                activeChatId={activeChatId} setActiveChatId={setActiveChatId}
+                user={user}
+                onLogout={onLogout}
+                chats={chats}
+                setNotification={setNotification}
+                openSettings={() => setIsSettingsOpen(true)}
+                isOpen={isSidebarOpen}
+                setIsOpen={setIsSidebarOpen}
+                theme={theme}
+                activeChatId={activeChatId}
+                setActiveChatId={setActiveChatId}
                 onDeleteChat={handleDeleteChat}
                 onArchiveChat={handleArchiveChat}
             />
-
-            {isSettingsOpen && <SettingsModal
-                user={user} closeSettings={() => setIsSettingsOpen(false)} setNotification={setNotification}
-                theme={theme} setTheme={setTheme} textSize={textSize} setTextSize={setTextSize}
-                saveHistory={saveHistory} setSaveHistory={setSaveHistory}
-            />}
-
+            {isSettingsOpen && (
+                <SettingsModal
+                    user={user}
+                    closeSettings={() => setIsSettingsOpen(false)}
+                    setNotification={setNotification}
+                    theme={theme}
+                    setTheme={setTheme}
+                    textSize={textSize}
+                    setTextSize={setTextSize}
+                    saveHistory={saveHistory}
+                    setSaveHistory={setSaveHistory}
+                />
+            )}
+            <CanvasModal
+                isOpen={isCanvasOpen}
+                onClose={() => {
+                    setIsCanvasOpen(false);
+                    setChartData(null);
+                }}
+                onSave={handleCanvasSave}
+                theme={theme}
+                chartData={chartData}
+                user={user}
+            />
+            <PreviewModal
+                isOpen={isPreviewOpen}
+                onClose={() => setIsPreviewOpen(false)}
+                code={previewCode}
+                theme={theme}
+            />
             <div className="flex-1 flex flex-col">
                 <div className="p-6 flex justify-between items-center h-20 backdrop-blur-xl bg-white/5 border-b border-gray-700/20">
                     <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`sidebar-toggle-btn p-3 rounded-xl ${theme === 'dark' ? 'text-gray-400 hover:text-white hover:bg-gray-800/50' : 'text-gray-600 hover:text-black hover:bg-gray-200/50'} transition-all transform hover:scale-110`} title="Toggle Sidebar">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                     </button>
-                    <h1 
+                    <h1
                         className="text-2xl font-light tracking-[0.3em] bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent"
                         style={{ fontFamily: "'Playfair Display', serif" }}
                     >
                         VILORA
                     </h1>
-                    <button onClick={() => startNewChat()} className={`p-3 rounded-xl ${theme === 'dark' ? 'text-gray-400 hover:text-white hover:bg-gray-800/50' : 'text-gray-600 hover:text-black hover:bg-gray-200/50'} transition-all transform hover:scale-110`} title="New Chat">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
-                    </button>
+                    <div className="flex gap-2">
+                        <button onClick={() => { setChartData(null); setIsCanvasOpen(true); }} className={`p-3 rounded-xl ${theme === 'dark' ? 'text-gray-400 hover:text-white hover:bg-gray-800/50' : 'text-gray-600 hover:text-black hover:bg-gray-200/50'} transition-all transform hover:scale-110`} title="Open Canvas">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.986L3 17.25V21h3.75l14.424-14.424zM16 7l4 4"></path></svg>
+                        </button>
+                        <button onClick={() => startNewChat()} className={`p-3 rounded-xl ${theme === 'dark' ? 'text-gray-400 hover:text-white hover:bg-gray-800/50' : 'text-gray-600 hover:text-black hover:bg-gray-200/50'} transition-all transform hover:scale-110`} title="New Chat">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
+                        </button>
+                    </div>
                 </div>
-
                 <div className={`flex-1 p-8 overflow-y-auto ${textSizeClass} custom-scrollbar`}>
                     {activeChatId && messagesToDisplay.length > 0 ? (
                         <div className="space-y-6 max-w-4xl mx-auto">
@@ -915,8 +1187,8 @@ function ChatDashboard({ onLogout, user }) {
                                         </ReactMarkdown>
                                     </div>
                                     {msg.sender === 'bot' && (
-                                        <button 
-                                            onClick={() => handleSpeak(msg.text)} 
+                                        <button
+                                            onClick={() => handleSpeak(msg.text)}
                                             className={`mt-2 p-2 rounded-full transition-all transform hover:scale-110 ${theme === 'dark' ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-500 hover:bg-gray-200'}`}
                                             title="Read aloud"
                                         >
@@ -1016,17 +1288,18 @@ function ChatDashboard({ onLogout, user }) {
             </div>
 
             {notification && (
-                <div className={`fixed bottom-32 left-1/2 -translate-x-1/2 ${theme === 'dark' ? 'bg-gray-900/95 backdrop-blur-xl text-white border-gray-700/50' : 'bg-white/95 backdrop-blur-xl text-gray-900 border-gray-200/50'} px-6 py-4 rounded-2xl shadow-2xl border font-semibold text-lg animate-bounce z-40`}>
+                <div className={`fixed bottom-28 left-1/2 -translate-x-1/2 ${theme === 'dark' ? 'bg-gray-900/95 backdrop-blur-xl text-white border-gray-700/50' : 'bg-white/95 backdrop-blur-xl text-gray-900 border-gray-200/50'} px-6 py-4 rounded-2xl shadow-2xl border font-semibold text-lg animate-bounce z-40`}>
                     {notification}
                 </div>
             )}
 
-            <style jsx>{`
-                /* NEW: Zoom out the entire application */
-                :global(body) {
-                    zoom: 75%;
-                }
+            <style jsx global>{`
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
                 
+                body {
+                    font-family: 'Inter', sans-serif;
+                }
                 .custom-scrollbar::-webkit-scrollbar {
                     width: 8px;
                 }
@@ -1057,75 +1330,26 @@ function ChatDashboard({ onLogout, user }) {
                     animation: fade-in 0.5s ease-out;
                 }
                 
-                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-                @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@300;400;500;600;700;800;900&display=swap');
-                
-                * {
-                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                }
-                
-                .font-black {
-                    font-weight: 900;
-                    letter-spacing: -0.02em;
-                }
-                
-                .tracking-tight {
-                    letter-spacing: -0.025em;
-                }
-                
-                .tracking-wide {
-                    letter-spacing: 0.025em;
-                }
-                
                 .prose h1, .prose h2, .prose h3 {
-                    font-weight: 700;
                     background: linear-gradient(to right, #06b6d4, #8b5cf6);
                     -webkit-background-clip: text;
                     -webkit-text-fill-color: transparent;
                     background-clip: text;
                 }
-                
                 .prose code {
-                    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-                    font-weight: 500;
+                    font-family: 'SF Mono', Monaco, Consolas, 'Courier New', monospace;
                 }
-                
                 .prose blockquote {
                     border-left: 4px solid #06b6d4;
                     background: rgba(6, 182, 212, 0.1);
-                    border-radius: 0 12px 12px 0;
-                    padding: 16px 20px;
-                    margin: 16px 0;
                 }
-                
                 .prose a {
                     color: #06b6d4;
                     text-decoration: none;
-                    font-weight: 600;
-                    transition: all 0.2s ease;
                 }
-                
                 .prose a:hover {
                     color: #8b5cf6;
                     text-decoration: underline;
-                }
-                
-                .prose ul, .prose ol {
-                    padding-left: 1.5rem;
-                }
-                
-                .prose li {
-                    margin: 0.5rem 0;
-                }
-                
-                .prose strong {
-                    font-weight: 700;
-                    color: #06b6d4;
-                }
-                
-                .prose em {
-                    font-style: italic;
-                    color: #8b5cf6;
                 }
             `}</style>
         </div>
